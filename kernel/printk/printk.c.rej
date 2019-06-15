@@ -1,0 +1,30 @@
+--- kernel/printk/printk.c
++++ kernel/printk/printk.c
+@@ -1617,6 +1617,11 @@ static void call_console_drivers(const c
+ 	if (!console_drivers)
+ 		return;
+ 
++	if (IS_ENABLED(CONFIG_PREEMPT_RT_BASE)) {
++		if (in_irq() || in_nmi())
++			return;
++	}
++
+ 	migrate_disable();
+ 	for_each_console(con) {
+ 		if (exclusive_console && con != exclusive_console)
+--- kernel/printk/printk.c
++++ kernel/printk/printk.c
+@@ -430,6 +430,13 @@ asmlinkage void early_printk(const char
+  */
+ static bool __read_mostly printk_killswitch;
+ 
++static int __init force_early_printk_setup(char *str)
++{
++	printk_killswitch = true;
++	return 0;
++}
++early_param("force_early_printk", force_early_printk_setup);
++
+ void printk_kill(void)
+ {
+ 	printk_killswitch = true;

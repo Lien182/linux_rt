@@ -1,0 +1,45 @@
+--- include/linux/seqlock.h
++++ include/linux/seqlock.h
+@@ -479,36 +511,36 @@ static inline unsigned read_seqretry(con
+ static inline void write_seqlock(seqlock_t *sl)
+ {
+ 	spin_lock(&sl->lock);
+-	write_seqcount_begin(&sl->seqcount);
++	__raw_write_seqcount_begin(&sl->seqcount);
+ }
+ 
+ static inline void write_sequnlock(seqlock_t *sl)
+ {
+-	write_seqcount_end(&sl->seqcount);
++	__raw_write_seqcount_end(&sl->seqcount);
+ 	spin_unlock(&sl->lock);
+ }
+ 
+ static inline void write_seqlock_bh(seqlock_t *sl)
+ {
+ 	spin_lock_bh(&sl->lock);
+-	write_seqcount_begin(&sl->seqcount);
++	__raw_write_seqcount_begin(&sl->seqcount);
+ }
+ 
+ static inline void write_sequnlock_bh(seqlock_t *sl)
+ {
+-	write_seqcount_end(&sl->seqcount);
++	__raw_write_seqcount_end(&sl->seqcount);
+ 	spin_unlock_bh(&sl->lock);
+ }
+ 
+ static inline void write_seqlock_irq(seqlock_t *sl)
+ {
+ 	spin_lock_irq(&sl->lock);
+-	write_seqcount_begin(&sl->seqcount);
++	__raw_write_seqcount_begin(&sl->seqcount);
+ }
+ 
+ static inline void write_sequnlock_irq(seqlock_t *sl)
+ {
+-	write_seqcount_end(&sl->seqcount);
++	__raw_write_seqcount_end(&sl->seqcount);
+ 	spin_unlock_irq(&sl->lock);
+ }
+ 

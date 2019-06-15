@@ -73,6 +73,11 @@ static DEFINE_PER_CPU(struct cpuhp_cpu_state, cpuhp_state) = {
 	.fail = CPUHP_INVALID,
 };
 
+#if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PREEMPT_RT_FULL)
+static DEFINE_PER_CPU(struct rt_rw_lock, cpuhp_pin_lock) = \
+	__RWLOCK_RT_INITIALIZER(cpuhp_pin_lock);
+#endif
+
 #if defined(CONFIG_LOCKDEP) && defined(CONFIG_SMP)
 static struct lockdep_map cpuhp_state_up_map =
 	STATIC_LOCKDEP_MAP_INIT("cpuhp_state-up", &cpuhp_state_up_map);
@@ -285,6 +290,21 @@ void cpu_maps_update_done(void)
 static int cpu_hotplug_disabled;
 
 #ifdef CONFIG_HOTPLUG_CPU
+
+/**
+ * pin_current_cpu - Prevent the current cpu from being unplugged
+ */
+void pin_current_cpu(void)
+{
+
+}
+
+/**
+ * unpin_current_cpu - Allow unplug of current cpu
+ */
+void unpin_current_cpu(void)
+{
+}
 
 DEFINE_STATIC_PERCPU_RWSEM(cpu_hotplug_lock);
 
@@ -1124,6 +1144,15 @@ int freeze_secondary_cpus(int primary)
 
 void __weak arch_enable_nonboot_cpus_begin(void)
 {
+#ifdef CONFIG_PREEMPT_RT_FULL
+	struct rt_rw_lock *cpuhp_pin = this_cpu_ptr(&cpuhp_pin_lock);
+
+	if (WARN_ON(current->pinned_on_cpu != smp_processor_id()))
+		cpuhp_pin = per_cpu_ptr(&cpuhp_pin_lock, current->pinned_on_cpu);
+
+	current->pinned_on_cpu = -1;
+	__read_rt_unlock(cpuhp_pin);
+#endif
 }
 
 void __weak arch_enable_nonboot_cpus_end(void)
