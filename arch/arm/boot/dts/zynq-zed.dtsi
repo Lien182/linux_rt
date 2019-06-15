@@ -8,8 +8,7 @@
 	};
 
 	chosen {
-//		bootargs = "console=ttyPS0,115200 root=/dev/ram rw initrd=0x1100000,33M ip=:::::eth0:dhcp earlyprintk";
-		bootargs = "console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait";
+		bootargs = "console=ttyPS0,115200 root=/dev/nfs rw rootfstype=nfs nfsroot=192.168.42.1:/home/christian/reconos/nfs,tcp,nfsvers=3 ip=192.168.42.2:::255.255.255.0:reconos:eth0:off earlyprintk";
 		linux,stdout-path = "/amba@0/uart@E0001000";
 	};
 };

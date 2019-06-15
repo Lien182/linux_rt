@@ -23,9 +23,10 @@
 	};
 
 	chosen {
-		bootargs = "";
+		bootargs = "console=ttyPS0,115200 root=/dev/nfs rw rootfstype=nfs nfsroot=192.168.42.1:/home/christian/reconos/nfs,tcp,nfsvers=3 ip=192.168.42.2:::255.255.255.0:reconos:eth0:off earlyprintk";
 		stdout-path = "serial0:115200n8";
 	};
+
 
 	usb_phy0: phy0@e0002000 {
 		compatible = "ulpi-phy";
