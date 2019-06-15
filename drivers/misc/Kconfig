@@ -87,7 +87,7 @@ config ATMEL_TCB_CLKSRC_BLOCK
 config ATMEL_TCB_CLKSRC_USE_SLOW_CLOCK
 	bool "TC Block use 32 KiHz clock"
 	depends on ATMEL_TCB_CLKSRC
-	default y
+	default y if !PREEMPT_RT_FULL
 	help
 	  Select this to use 32 KiHz base clock rate as TC block clock
 	  source for clock events.

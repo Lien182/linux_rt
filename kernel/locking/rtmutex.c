@@ -24,6 +24,7 @@
 #include <linux/sched/debug.h>
 #include <linux/timer.h>
 #include <linux/ww_mutex.h>
+#include <linux/blkdev.h>
 
 #include "rtmutex_common.h"
 
@@ -143,7 +144,8 @@ static void fixup_rt_mutex_waiters(struct rt_mutex *lock)
 
 static int rt_mutex_real_waiter(struct rt_mutex_waiter *waiter)
 {
-	return waiter && waiter != PI_WAKEUP_INPROGRESS;
+	return waiter && waiter != PI_WAKEUP_INPROGRESS &&
+		waiter != PI_REQUEUE_INPROGRESS;
 }
 
 /*
@@ -1924,6 +1926,15 @@ rt_mutex_fastlock(struct rt_mutex *lock, int state,
 {
 	if (likely(rt_mutex_cmpxchg_acquire(lock, NULL, current)))
 		return 0;
+	
+	/*
+	 * If rt_mutex blocks, the function sched_submit_work will not call
+	 * blk_schedule_flush_plug (because tsk_is_pi_blocked would be true).
+	 * We must call blk_schedule_flush_plug here, if we don't call it,
+	 * a deadlock in device mapper may happen.
+	 */
+	if (unlikely(blk_needs_flush_plug(current)))
+		blk_schedule_flush_plug(current);
 
 	return slowfn(lock, state, NULL, RT_MUTEX_MIN_CHAINWALK, ww_ctx);
 }
@@ -1941,6 +1952,9 @@ rt_mutex_timed_fastlock(struct rt_mutex *lock, int state,
 	if (chwalk == RT_MUTEX_MIN_CHAINWALK &&
 	    likely(rt_mutex_cmpxchg_acquire(lock, NULL, current)))
 		return 0;
+
+	if (unlikely(blk_needs_flush_plug(current)))
+		blk_schedule_flush_plug(current);
 
 	return slowfn(lock, state, timeout, chwalk, ww_ctx);
 }
@@ -2054,9 +2068,7 @@ int __sched rt_mutex_futex_trylock(struct rt_mutex *lock)
  */
 int __sched rt_mutex_lock_killable(struct rt_mutex *lock)
 {
-	might_sleep();
-
-	return rt_mutex_fastlock(lock, TASK_KILLABLE, rt_mutex_slowlock);
+	return rt_mutex_lock_state(lock, TASK_KILLABLE);
 }
 EXPORT_SYMBOL_GPL(rt_mutex_lock_killable);
 
@@ -2119,14 +2131,7 @@ int __sched rt_mutex_trylock(struct rt_mutex *lock)
 {
 	int ret;
 
-#ifdef CONFIG_PREEMPT_RT_FULL
-	if (WARN_ON_ONCE(in_irq() || in_nmi()))
-#else
-	if (WARN_ON_ONCE(in_irq() || in_nmi() || in_serving_softirq()))
-#endif
-		return 0;
-
-	ret = rt_mutex_fasttrylock(lock, rt_mutex_slowtrylock);
+	ret = __rt_mutex_trylock(lock);
 	if (ret)
 		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
 

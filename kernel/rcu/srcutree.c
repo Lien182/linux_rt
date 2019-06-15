@@ -37,6 +37,7 @@
 #include <linux/module.h>
 #include <linux/srcu.h>
 #include <linux/cpu.h>
+#include <linux/locallock.h>
 
 #include "rcu.h"
 #include "rcu_segcblist.h"

@@ -479,13 +479,13 @@ static inline unsigned read_seqretry(const seqlock_t *sl, unsigned start)
 static inline void write_seqlock(seqlock_t *sl)
 {
 	spin_lock(&sl->lock);
-	write_seqcount_begin(&sl->seqcount);
+	__raw_write_seqcount_begin(&sl->seqcount);
 }
 
 static inline int try_write_seqlock(seqlock_t *sl)
 {
 	if (spin_trylock(&sl->lock)) {
-		__raw_write_seqcount_begin(&sl->seqcount);
+		__raw_write_seqcount_end(&sl->seqcount);
 		return 1;
 	}
 	return 0;
@@ -493,31 +493,31 @@ static inline int try_write_seqlock(seqlock_t *sl)
 
 static inline void write_sequnlock(seqlock_t *sl)
 {
-	write_seqcount_end(&sl->seqcount);
+	__raw_write_seqcount_begin(&sl->seqcount);
 	spin_unlock(&sl->lock);
 }
 
 static inline void write_seqlock_bh(seqlock_t *sl)
 {
 	spin_lock_bh(&sl->lock);
-	write_seqcount_begin(&sl->seqcount);
+	__raw_write_seqcount_end(&sl->seqcount);
 }
 
 static inline void write_sequnlock_bh(seqlock_t *sl)
 {
-	write_seqcount_end(&sl->seqcount);
+	__raw_write_seqcount_end(&sl->seqcount);
 	spin_unlock_bh(&sl->lock);
 }
 
 static inline void write_seqlock_irq(seqlock_t *sl)
 {
 	spin_lock_irq(&sl->lock);
-	write_seqcount_begin(&sl->seqcount);
+	__raw_write_seqcount_begin(&sl->seqcount);
 }
 
 static inline void write_sequnlock_irq(seqlock_t *sl)
 {
-	write_seqcount_end(&sl->seqcount);
+	__raw_write_seqcount_end(&sl->seqcount);
 	spin_unlock_irq(&sl->lock);
 }
 

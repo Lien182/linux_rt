@@ -296,7 +296,32 @@ static int cpu_hotplug_disabled;
  */
 void pin_current_cpu(void)
 {
+#ifdef CONFIG_PREEMPT_RT_FULL
+	struct rt_rw_lock *cpuhp_pin;
+	unsigned int cpu;
+	int ret;
 
+again:
+	cpuhp_pin = this_cpu_ptr(&cpuhp_pin_lock);
+	ret = __read_rt_trylock(cpuhp_pin);
+	if (ret) {
+		current->pinned_on_cpu = smp_processor_id();
+		return;
+	}
+	cpu = smp_processor_id();
+	preempt_lazy_enable();
+	preempt_enable();
+
+	__read_rt_lock(cpuhp_pin);
+
+	preempt_disable();
+	preempt_lazy_disable();
+	if (cpu != smp_processor_id()) {
+		__read_rt_unlock(cpuhp_pin);
+		goto again;
+	}
+	current->pinned_on_cpu = cpu;
+#endif
 }
 
 /**
@@ -773,6 +798,9 @@ static int take_cpu_down(void *_param)
 
 static int takedown_cpu(unsigned int cpu)
 {
+#ifdef CONFIG_PREEMPT_RT_FULL
+	struct rt_rw_lock *cpuhp_pin = per_cpu_ptr(&cpuhp_pin_lock, cpu);
+#endif
 	struct cpuhp_cpu_state *st = per_cpu_ptr(&cpuhp_state, cpu);
 	int err;
 
@@ -785,12 +813,17 @@ static int takedown_cpu(unsigned int cpu)
 	 * interrupt affinities.
 	 */
 	irq_lock_sparse();
-
+#ifdef CONFIG_PREEMPT_RT_FULL
+	__write_rt_lock(cpuhp_pin);
+#endif
 	/*
 	 * So now all preempt/rcu users must observe !cpu_active().
 	 */
 	err = stop_machine_cpuslocked(take_cpu_down, NULL, cpumask_of(cpu));
 	if (err) {
+#ifdef CONFIG_PREEMPT_RT_FULL
+		__write_rt_unlock(cpuhp_pin);
+#endif
 		/* CPU refused to die */
 		irq_unlock_sparse();
 		/* Unpark the hotplug thread so we can rollback there */
@@ -808,7 +841,10 @@ static int takedown_cpu(unsigned int cpu)
 	 */
 	wait_for_ap_thread(st, false);
 	BUG_ON(st->state != CPUHP_AP_IDLE_DEAD);
-
+	
+#ifdef CONFIG_PREEMPT_RT_FULL
+	__write_rt_unlock(cpuhp_pin);
+#endif
 	/* Interrupts are moved away from the dying cpu, reenable alloc/free */
 	irq_unlock_sparse();
 

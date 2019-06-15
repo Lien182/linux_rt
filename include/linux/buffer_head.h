@@ -79,6 +79,10 @@ struct buffer_head {
 #ifdef CONFIG_PREEMPT_RT_BASE
 	spinlock_t b_uptodate_lock;
 #endif
+#if IS_ENABLED(CONFIG_JBD2)
+	spinlock_t b_state_lock;
+	spinlock_t b_journal_head_lock;
+#endif
 };
 
 static inline unsigned long bh_uptodate_lock_irqsave(struct buffer_head *bh)
@@ -109,6 +113,10 @@ static inline void buffer_head_init_locks(struct buffer_head *bh)
 {
 #ifdef CONFIG_PREEMPT_RT_BASE
 	spin_lock_init(&bh->b_uptodate_lock);
+#if IS_ENABLED(CONFIG_JBD2)
+	spin_lock_init(&bh->b_state_lock);
+	spin_lock_init(&bh->b_journal_head_lock);
+#endif
 #endif
 }
 

@@ -536,11 +536,33 @@ __tracing_map_insert(struct tracing_map *map, void *key, bool lookup_only)
 		entry = TRACING_MAP_ENTRY(map->map, idx);
 		test_key = entry->key;
 
-		if (test_key && test_key == key_hash && entry->val &&
-		    keys_match(key, entry->val->key, map->key_size)) {
-			if (!lookup_only)
-				atomic64_inc(&map->hits);
-			return entry->val;
+		if (test_key && test_key == key_hash) {
+			val = READ_ONCE(entry->val);
+			if (val &&
+			    keys_match(key, val->key, map->key_size)) {
+				if (!lookup_only)
+					atomic64_inc(&map->hits);
+				return val;
+			} else if (unlikely(!val)) {
+				/*
+				 * The key is present. But, val (pointer to elt
+				 * struct) is still NULL. which means some other
+				 * thread is in the process of inserting an
+				 * element.
+				 *
+				 * On top of that, it's key_hash is same as the
+				 * one being inserted right now. So, it's
+				 * possible that the element has the same
+				 * key as well.
+				 */
+
+				dup_try++;
+				if (dup_try > map->map_size) {
+					atomic64_inc(&map->drops);
+					break;
+				}
+				continue;
+			}
 		}
 
 		if (!test_key) {

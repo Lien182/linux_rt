@@ -292,9 +292,9 @@ static DEFINE_LOCAL_IRQ_LOCK(pa_lock);
 
 #ifdef CONFIG_PREEMPT_RT_BASE
 # define cpu_lock_irqsave(cpu, flags)		\
-	spin_lock_irqsave(&per_cpu(pa_lock, cpu).lock, flags)
+	local_lock_irqsave_on(pa_lock, flags, cpu)
 # define cpu_unlock_irqrestore(cpu, flags)	\
-	spin_unlock_irqrestore(&per_cpu(pa_lock, cpu).lock, flags)
+	local_unlock_irqrestore_on(pa_lock, flags, cpu)
 #else
 # define cpu_lock_irqsave(cpu, flags)		local_irq_save(flags)
 # define cpu_unlock_irqrestore(cpu, flags)	local_irq_restore(flags)
@@ -2409,16 +2409,18 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
 void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
 {
 	unsigned long flags;
+	LIST_HEAD(dst);
 	int to_drain, batch;
 
 	local_lock_irqsave(pa_lock, flags);
 	batch = READ_ONCE(pcp->batch);
 	to_drain = min(pcp->count, batch);
 	if (to_drain > 0) {
-		free_pcppages_bulk(zone, to_drain, pcp);
+		isolate_pcp_pages(to_drain, pcp, &dst);
 		pcp->count -= to_drain;
 	}
 	local_unlock_irqrestore(pa_lock, flags);
+	free_pcppages_bulk(zone, to_drain, &dst);
 }
 #endif
 
@@ -2434,16 +2436,21 @@ static void drain_pages_zone(unsigned int cpu, struct zone *zone)
 	unsigned long flags;
 	struct per_cpu_pageset *pset;
 	struct per_cpu_pages *pcp;
+	LIST_HEAD(dst);
+	int count;
 
 	cpu_lock_irqsave(cpu, flags);
 	pset = per_cpu_ptr(zone->pageset, cpu);
 
 	pcp = &pset->pcp;
-	if (pcp->count) {
-		free_pcppages_bulk(zone, pcp->count, pcp);
+	count = pcp->count;
+	if (count) {
+		isolate_pcp_pages(count, pcp, &dst);
 		pcp->count = 0;
 	}
 	cpu_unlock_irqrestore(cpu, flags);
+	if (count)
+		free_pcppages_bulk(zone, count, &dst);
 }
 
 /*
