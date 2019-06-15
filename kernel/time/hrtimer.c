@@ -1793,8 +1793,9 @@ static long __sched hrtimer_nanosleep_restart(struct restart_block *restart)
 	return ret;
 }
 
-long hrtimer_nanosleep(const struct timespec64 *rqtp,
-		       const enum hrtimer_mode mode, const clockid_t clockid)
+static long __hrtimer_nanosleep(const struct timespec64 *rqtp,
+				const enum hrtimer_mode mode, const clockid_t clockid,
+				unsigned long state)
 {
 	struct restart_block *restart;
 	struct hrtimer_sleeper t;
@@ -1826,9 +1827,8 @@ out:
 	return ret;
 }
 
-static long __hrtimer_nanosleep(const struct timespec64 *rqtp,
-				const enum hrtimer_mode mode, const clockid_t clockid,
-				unsigned long state)
+long hrtimer_nanosleep(const struct timespec64 *rqtp,
+		       const enum hrtimer_mode mode, const clockid_t clockid)
 {
 	return __hrtimer_nanosleep(rqtp, mode, clockid, TASK_INTERRUPTIBLE);
 }
