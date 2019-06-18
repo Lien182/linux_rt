@@ -18,6 +18,8 @@
 #
 unexport MAKEFLAGS
 
+EXTLIBS = -lpthread -lrt -lelf -lm -lebl -lz -ldl
+
 #
 # Do a parallel build with multiple jobs, based on the number of CPUs online
 # in this system: 'make -j8' on a 8-CPU system, etc.
