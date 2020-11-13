@@ -849,6 +849,7 @@ void irq_exit(void)
 /*
  * Same as __raise_softirq_irqoff() but will process them in ksoftirqd
  */
+#ifdef CONFIG_PREEMPT_RT_FULL
 void __raise_softirq_irqoff_ksoft(unsigned int nr)
 {
 	unsigned int mask;
@@ -866,6 +867,7 @@ void __raise_softirq_irqoff_ksoft(unsigned int nr)
 		__this_cpu_read(ksoftirqd)->softirqs_raised |= mask;
 	wakeup_proper_softirq(nr);
 }
+#endif
 
 void raise_softirq(unsigned int nr)
 {
