@@ -19,12 +19,14 @@
 
 	memory@0 {
 		device_type = "memory";
-		reg = <0x0 0x20000000>;
+		reg = <0x0 0x1D000000>;
 	};
 
 	chosen {
-		bootargs = "console=ttyPS0,115200 root=/dev/nfs rw rootfstype=nfs nfsroot=192.168.42.1:/home/christian/reconos/nfs,tcp,nfsvers=3 ip=192.168.42.2:::255.255.255.0:reconos:eth0:off earlyprintk";
+		bootargs = "console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait devtmpfs.mount=1";
 		stdout-path = "serial0:115200n8";
+		#bootargs = "console=ttyPS0,115200 root=/dev/nfs rw rootfstype=nfs nfsroot=192.168.42.1:/home/christian/reconos/nfs,tcp,nfsvers=3 ip=192.168.42.2:::255.255.255.0:reconos:eth0:off earlyprintk";
+		#stdout-path = "serial0:115200n8";
 	};
 
 
