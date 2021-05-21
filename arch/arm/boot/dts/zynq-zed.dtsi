@@ -8,8 +8,10 @@
 	};
 
 	chosen {
-		bootargs = "console=ttyPS0,115200 root=/dev/nfs rw rootfstype=nfs nfsroot=192.168.42.1:/home/christian/reconos/nfs,tcp,nfsvers=3 ip=192.168.42.2:::255.255.255.0:reconos:eth0:off earlyprintk";
-		linux,stdout-path = "/amba@0/uart@E0001000";
+		bootargs = "console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait devtmpfs.mount=1";
+		#bootargs = "console=ttyPS0,115200 root=/dev/nfs rw rootfstype=nfs nfsroot=192.168.42.1:/home/christian/reconos/nfs,tcp,nfsvers=3 ip=192.168.42.2:::255.255.255.0:reconos:eth0:off earlyprintk";
+		stdout-path = "serial0:115200n8";
+		#linux,stdout-path = "/amba@0/uart@E0001000"; # for pynqz1
 	};
 };
 

@@ -1,0 +1,6 @@
+export WD=$(pwd)/..
+export KDIR=$WD/linux_rt/
+export ARCH=arm
+export CROSS_COMPILE=/opt/Xilinx/SDK/2018.2/gnu/aarch32/lin/gcc-arm-linux-gnueabi/bin/arm-linux-gnueabihf-
+export PATH=$WD/u-boot-xlnx/tools/:$PATH
+export PATH=$WD/linux-xlnx/scripts/dtc/:$PATH

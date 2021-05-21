@@ -15,6 +15,7 @@
 		serial0 = &uart1;
 		spi0 = &qspi;
 		mmc0 = &sdhci0;
+		i2c0 = &i2c0;
 	};
 
 	memory@0 {
@@ -23,7 +24,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait devtmpfs.mount=1";
+		bootargs = "console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait devtmpfs.mount=1 earlyprintk";
 		stdout-path = "serial0:115200n8";
 		#bootargs = "console=ttyPS0,115200 root=/dev/nfs rw rootfstype=nfs nfsroot=192.168.42.1:/home/christian/reconos/nfs,tcp,nfsvers=3 ip=192.168.42.2:::255.255.255.0:reconos:eth0:off earlyprintk";
 		#stdout-path = "serial0:115200n8";
@@ -125,4 +126,11 @@
 	status = "okay";
 	dr_mode = "host";
 	usb-phy = <&usb_phy0>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <400000>;
+	scl-gpios = <&gpio0 50 0>;
+	sda-gpios = <&gpio0 51 0>;
 };
